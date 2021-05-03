@@ -1,6 +1,9 @@
-map_size: 8
-obstacles:
-  - coordinates: [1, 1, 1, 5]
-  - coordinates: [1, 4, 4, 5]
+title: 'Human Aware Motion Planner'
+map_size: 100
+resolution: 4
+obstacles: # NOTE origin top left, x goes right y goes down
+  - coordinates: [38, 2, 40, 98]
+  - coordinates: [60, 2, 62, 98]
 humans:
-  - coordinates: [6, 2]
+  - coordinates: [50, 80]
+    direction: 270 # NOTE 0 is to the right
