@@ -7,3 +7,10 @@ obstacles: # NOTE origin top left, x goes right y goes down
 humans:
   - coordinates: [50, 80]
     direction: 270 # NOTE 0 is to the right
+    state: "SITTING"
+  - coordinates: [20, 80]
+    direction: 0 # NOTE 0 is to the right
+    state: "SITTING"
+  - coordinates: [90, 10]
+    direction: 180 # NOTE 0 is to the right
+    state: "STANDING"

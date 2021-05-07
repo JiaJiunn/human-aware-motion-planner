@@ -1,0 +1,9 @@
+title: 'Human Aware Motion Planner'
+map_size: 100
+resolution: 4
+obstacles: # NOTE origin top left, x goes right y goes down
+  - coordinates: [30, 30, 35, 60]
+humans:
+  - coordinates: [70, 45]
+    direction: 180 # NOTE 0 is to the right
+    state: "SITTING"
