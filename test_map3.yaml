@@ -1,9 +1,10 @@
-title: 'Human Aware Motion Planner'
+title: 'Dont Jump Scare Pls'
 map_size: 100
 resolution: 4
 obstacles: # NOTE origin top left, x goes right y goes down
-  - coordinates: [38, 2, 40, 98]
-  - coordinates: [60, 2, 62, 98]
+  - coordinates: [38, 60, 40, 98]
+  - coordinates: [60, 60, 62, 98]
+  - coordinates: [70, 2, 72, 20]
 humans:
   - coordinates: [50, 80]
     direction: 270 # NOTE 0 is to the right
