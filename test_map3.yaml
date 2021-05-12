@@ -4,7 +4,7 @@ resolution: 4
 obstacles: # NOTE origin top left, x goes right y goes down
   - coordinates: [38, 60, 40, 98]
   - coordinates: [60, 60, 62, 98]
-  - coordinates: [70, 2, 72, 20]
+  - coordinates: [70, 0, 72, 20]
 humans:
   - coordinates: [50, 80]
     direction: 270 # NOTE 0 is to the right
@@ -15,4 +15,5 @@ humans:
   - coordinates: [90, 10]
     direction: 180 # NOTE 0 is to the right
     state: "STANDING"
-interactions: []
+interactions: 
+  - indices: [2, 2]

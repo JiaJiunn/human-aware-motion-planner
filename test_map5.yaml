@@ -1,0 +1,15 @@
+title: 'Dont Jump Scare Pls'
+map_size: 100
+resolution: 4
+obstacles: []
+humans:
+  - coordinates: [25, 80]
+    direction: 270 # NOTE 0 is to the right
+    state: "SITTING"
+  - coordinates: [20, 80]
+    direction: 0 # NOTE 0 is to the right
+    state: "STANDING"
+  - coordinates: [99, 99]
+    direction: 180 # NOTE 0 is to the right
+    state: "SITTING"
+interactions: []

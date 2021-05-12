@@ -1,6 +1,7 @@
 import pygame
 import numpy as np
 from collections import deque
+import matplotlib.pyplot as plt
 
 WINDOW_SIZE = 500
 POINT_RADIUS = 3
@@ -49,6 +50,9 @@ def weighted_euc_dist(point1, point2, point3):
 
 
 def main():
+
+  plt.imshow(np.zeros((2,2)), cmap='gray')
+  plt.show()
 
   # set up screen
   pygame.init()

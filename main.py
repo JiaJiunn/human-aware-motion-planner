@@ -7,7 +7,8 @@ import numpy as np
 import scipy.stats
 from skimage.draw import line
 import yaml
-
+from a_star import astar
+from collections import deque
 
 PARENT_DIR = Path(__file__).parent.parent
 HUMAN_RADIUS = 3
@@ -24,6 +25,45 @@ INTERRUPT_COST_RATIO = 0.7
 BLACK = 0, 0, 0
 WHITE = 255, 255, 255
 RED = 255, 0, 0
+BLUE = 0, 255, 0
+BEZIER_POINTS = []
+
+
+def generate_curve_coefs(p1, p2, p3, p4):
+	m2 = np.array([p1, p2, p3, p4])
+	m1 = np.array([[-1, 3, -3, 1], [3, -6, 3, 0], [-3, 3, 0, 0], [1, 0, 0, 0]])
+	return (m1 @ m2)
+
+
+def add_curve(x0, y0, x1, y1, x2, y2, x3, y3, step):
+	t = 0
+	while (t < 1):
+		x_matrix = generate_curve_coefs(x0, x1, x2, x3)
+		y_matrix = generate_curve_coefs(y0, y1, y2, y3)
+		x = x_matrix[0] * (t ** 3) + x_matrix[1] * (t ** 2) + x_matrix[2] * t + x_matrix[3]
+		y = y_matrix[0] * (t ** 3) + y_matrix[1] * (t ** 2) + y_matrix[2] * t + y_matrix[3]
+		BEZIER_POINTS.append([x, y])
+		t += step
+
+
+def euc_dist(point1, point2):
+	point1_np = np.array(point1)
+	point2_np = np.array(point2)
+	return np.linalg.norm(point2_np - point1_np)
+
+
+def weighted_euc_dist(point1, point2, point3):
+	point1_np = np.array(point1)
+	point2_np = np.array(point2)
+	point3_np = np.array(point3)
+	# import pdb; pdb.set_trace()
+	if not np.any(point2_np - point1_np):
+		return np.linalg.norm(point3_np - point2_np)
+	else: 
+		prev_vec = (point2_np - point1_np)/np.linalg.norm(point2_np - point1_np)
+		curr_vec = (point3_np - point2_np)/np.linalg.norm(point3_np - point2_np)
+		return np.dot(curr_vec, prev_vec) * np.linalg.norm(point3_np - point2_np)
+
 
 def arg_parser():
     """Returns parser for cli arguments."""
@@ -237,8 +277,8 @@ def get_hidden_zone_cost(map_dict):
 	return map_mat_empty
 
 
-def euc_dist(point1, point2):
-    return np.linalg.norm(point1 - point2)
+# def euc_dist(point1, point2):
+#     return np.linalg.norm(point1 - point2)
 
 
 def get_interrupt_cost(map_dict):
@@ -305,11 +345,11 @@ def overlay_obs_hum(map_dict, cost_map):
 	for obs in map_dict['obstacles']:
 		tl_x, tl_y, br_x, br_y = obs['coordinates']
 		obs_shape = (br_y-tl_y+1, br_x-tl_x+1)
-		cost_map[tl_y:(br_y+1), tl_x:(br_x+1)] = np.ones(obs_shape)
+		cost_map[tl_y:(br_y+1), tl_x:(br_x+1)] = np.ones(obs_shape) * 100
 
 	for hum in map_dict['humans']:
 		x, y = hum['coordinates']
-		cost_map[y, x] = 1
+		cost_map[y, x] = 100
 
 	return cost_map
 
@@ -334,16 +374,41 @@ def main():
 	# set up cost map
 	test_safety_cost = get_safety_cost(map_dict)
 	test_visibility_cost = get_visibility_cost(map_dict)
-	test_obs_cost = get_obs_cost(map_dict)
-	test_hidden_zone_cost = get_hidden_zone_cost(map_dict)
-	test_interrupt_cost = get_interrupt_cost(map_dict)
+	test_obs_cost = get_obs_cost(map_dict) * 500
+	test_hidden_zone_cost = get_hidden_zone_cost(map_dict) * 20
+	test_interrupt_cost = get_interrupt_cost(map_dict) * 10
 	cost_map = test_safety_cost + test_visibility_cost + test_obs_cost + test_hidden_zone_cost + test_interrupt_cost
-	plt.imshow(overlay_obs_hum(map_dict, cost_map), cmap='gray')
-	plt.show()
+	cost_map *= 15
+	cost_map += 15
 
+	# hard coded path TODO
+	path = astar(cost_map, (90, 50), (10, 90))
+	# path = astar(cost_map, (10, 50), (10, 90))
+
+	# display
+	display_map = overlay_obs_hum(map_dict, cost_map)
+	for coor_x, coor_y in path:
+		display_map[coor_x, coor_y] = 100
+	plt.imshow(display_map, cmap='gray')
+	plt.show()
+	import pdb; pdb.set_trace()
+
+	for i in range(len(path)):
+		path[i] = (path[i][1] * screen_resolution, path[i][0] * screen_resolution)
+	
+	init_curve = False
+	BOT_IDX = 0
+	PREV_IDX = deque()
+	PREV_IDX.append(0)
 	while True:
 		screen.fill(WHITE)
 
+		if not init_curve:
+			# generate bezier points
+			for idx in range(len(path)-12):
+				if idx % 12 == 0:
+					add_curve(path[idx][0], path[idx][1], path[idx+4][0], path[idx+4][1], path[idx+8][0], path[idx+8][1], path[idx+12][0], path[idx+12][1], .0001)
+			init_curve = True
 		# set up obstacles
 		for obs in map_dict['obstacles']:
 
@@ -367,6 +432,34 @@ def main():
 			x_diff *= HUMAN_DIR_LEN
 			y_diff *= HUMAN_DIR_LEN
 			pygame.draw.line(screen, RED, (x, y) , (x + x_diff, y + y_diff), width=HUMAN_RADIUS)
+		for j in range(len(path)-1):
+			pygame.draw.line(screen, RED, (path[j][0], path[j][1]), (path[j+1][0], path[j+1][1]))
+		
+		# draw bot (constant speed)
+		pygame.draw.circle(screen, BLUE, BEZIER_POINTS[BOT_IDX], 3)
+		next_bot_idx = BOT_IDX + 1
+		while euc_dist(BEZIER_POINTS[BOT_IDX], BEZIER_POINTS[next_bot_idx]) < 0.1:
+			next_bot_idx += 10
+			if next_bot_idx >= len(BEZIER_POINTS):
+				next_bot_idx = 0
+				break
+		BOT_IDX = next_bot_idx
+		import pdb; pdb.set_trace()
+
+		# draw bot (slow when turn)
+		# pygame.draw.circle(screen, BLUE, BEZIER_POINTS[BOT_IDX], 3)
+		# next_bot_idx = BOT_IDX + 1
+		# while weighted_euc_dist(BEZIER_POINTS[PREV_IDX[-1]], BEZIER_POINTS[BOT_IDX], BEZIER_POINTS[next_bot_idx]) < 1:
+		# 	next_bot_idx += 10
+		# 	if next_bot_idx >= len(BEZIER_POINTS):
+		# 		next_bot_idx = 0
+		# 		PREV_IDX.clear()
+		# 		PREV_IDX.append(0)
+		# 		break
+		# PREV_IDX.append(BOT_IDX)
+		# if len(PREV_IDX) == 5:
+		# 	PREV_IDX.pop()
+		# BOT_IDX = next_bot_idx
 
 		pygame.display.update()
 
